@@ -1,0 +1,23 @@
+
+[project]
+name = "server"
+version = "0.1.0"
+description = "FastAPI server for network traffic analysis"
+authors = [
+    {name = "Konrad Springer",email = "konrad.springer@student.pk.edu.pl"},
+    {name = "Adam Tylec",email = "example@student.pk.edu.pl"}
+]
+
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi (>=0.128.0,<0.129.0)",
+    "uvicorn (>=0.40.0,<0.41.0)"
+]
+
+[tool.poetry]
+package-mode = false
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"

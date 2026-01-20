@@ -1,0 +1,50 @@
+services:
+  server:
+    build: ./server
+    container_name: server
+    restart: no
+    ports:
+      - 8443:8443
+    healthcheck:
+      test: curl --fail --insecure https://localhost:8443/health || exit 1
+      interval: 1s
+      timeout: 10s
+      retries: 3
+      start_period: 1s
+    networks:
+      - app_network
+
+  client:
+    build: ./client
+    container_name: client
+    restart: no
+    depends_on:
+      server:
+        condition: service_healthy
+      polarproxy:
+        condition: service_started
+    networks:
+      - app_network
+    # environment:
+    #   - HTTPS_PROXY=http://polarproxy:10443
+
+  polarproxy:
+    build: ./polar-proxy
+    container_name: polar-proxy
+    restart: no
+    user: root
+    ports:
+      - 443:10443
+      - 10443:10443
+      - 1080:1080
+    volumes:
+      - ./polar-proxy/logs:/var/log/PolarProxy/
+      - ./polar-proxy/home:/home/polarproxy/
+    #   - ./pcaps:/pcaps
+    # command: -p 10443,80 -p 1080,8000 --pcap /pcaps
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
