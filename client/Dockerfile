@@ -9,4 +9,8 @@ RUN poetry config virtualenvs.create false && poetry install --no-interaction --
 
 COPY . .
 
+COPY docker-entrypoint.sh /docker-entrypoint.sh
+RUN chmod +x /docker-entrypoint.sh
+ENTRYPOINT ["/docker-entrypoint.sh"]
+
 CMD ["poetry", "run", "python", "main.py"]

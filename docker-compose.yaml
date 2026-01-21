@@ -23,10 +23,34 @@ services:
         condition: service_healthy
       polarproxy:
         condition: service_started
+      cert-installer:
+        condition: service_completed_successfully
+    environment:
+      - HTTPS_PROXY=http://polarproxy:1080
     networks:
       - app_network
+    volumes:
+      - polarproxy-certs:/certs:ro
     # environment:
     #   - HTTPS_PROXY=http://polarproxy:10443
+
+  cert-installer:
+    image: alpine:latest
+    container_name: cert-installer
+    depends_on:
+      polarproxy:
+        condition: service_started
+    networks:
+      - app_network
+    volumes:
+      - polarproxy-certs:/certs
+    command: >
+      sh -c "
+      apk add --no-cache curl &&
+      sleep 2 &&
+      curl -o /certs/polarproxy.crt http://polarproxy:10080/polarproxy.cer &&
+      chmod 644 /certs/polarproxy.crt
+      "
 
   polarproxy:
     build: ./polar-proxy
@@ -40,11 +64,18 @@ services:
     volumes:
       - ./polar-proxy/logs:/var/log/PolarProxy/
       - ./polar-proxy/home:/home/polarproxy/
-    #   - ./pcaps:/pcaps
-    # command: -p 10443,80 -p 1080,8000 --pcap /pcaps
+    command: -v -p 10443,80,443 -o /var/log/PolarProxy/ --certhttp 10080 --pcapoverip 0.0.0.0:57012 --httpconnect 1080 --leafcert sign
     networks:
       - app_network
 
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  polarproxy-certs:
+    driver: local
+    driver_opts:
+      o: bind
+      type: none
+      device: ./client/certs

@@ -17,6 +17,7 @@ Projekt ma na celu analizę szyfrowanego ruchu sieciowego z wykorzystaniem narz�
 ```
 ├── client
 │   ├── Dockerfile
+│   ├── docker-entrypoint.sh
 │   ├── main.py
 │   └── pyproject.toml
 ├── docker-compose.yaml
@@ -33,8 +34,73 @@ Projekt ma na celu analizę szyfrowanego ruchu sieciowego z wykorzystaniem narz�
     ├── key.pem
     ├── main.py
     └── pyproject.toml
+```
+
+---
+
+## Architektura kontenerów
+
+Projekt składa się z czterech głównych kontenerów Docker, które współpracują ze sobą w celu przechwytywania i analizy szyfrowanego ruchu sieciowego:
+
+### 1. **Server** (`server`)
+- **Rola**: Serwer HTTPS oparty na FastAPI
+- **Port**: 8443 (HTTPS)
+- **Funkcje**:
+  - Udostępnia API z kilkoma endpointami (`/`, `/data`, `/echo`, `/health`)
+  - Używa certyfikatu self-signed (generowanego automatycznie przy starcie)
+  - Działa jako punkt końcowy, do którego łączy się klient
+- **Healthcheck**: Sprawdza dostępność serwera przed uruchomieniem klienta
+
+### 2. **PolarProxy** (`polarproxy`)
+- **Rola**: Transparentny proxy TLS do przechwytywania i deszyfrowania ruchu
+- **Porty**:
+  - 10443: Transparentny proxy TLS
+  - 1080: HTTP CONNECT proxy (używany przez klienta)
+  - 10080: Serwer HTTP do pobierania certyfikatu CA
+  - 57012: PCAP-over-IP listener
+- **Funkcje**:
+  - Przechwytuje ruch HTTPS między klientem a serwerem
+  - Deszyfruje komunikację TLS używając techniki Man-in-the-Middle
+  - Zapisuje odszyfrowany ruch do plików PCAP w katalogu `./logs/`
+  - Generuje własny certyfikat CA, którym podpisuje certyfikaty serwerów
+- **Flagi**:
+  - `--leafcert sign`: Podpisuje certyfikaty nawet dla niezaufanych serwerów
+  - `--httpconnect 1080`: Włącza proxy HTTP CONNECT
+
+### 3. **Cert-installer** (`cert-installer`)
+- **Rola**: Pomocniczy kontener do pobierania i przygotowania certyfikatów
+- **Cykl życia**: Uruchamia się, wykonuje zadanie i kończy działanie
+- **Funkcje**:
+  - Pobiera certyfikat CA z PolarProxy (http://polarproxy:10080/polarproxy.cer)
+  - Umieszcza oba certyfikaty w współdzielonym wolumenie `polarproxy-certs`
+  - Ustawia odpowiednie uprawnienia do plików (644)
+- **Zależności**: Czeka na uruchomienie PolarProxy i serwera
+
+### 4. **Client** (`client`)
+- **Rola**: Klient HTTP/HTTPS wysyłający żądania do serwera
+- **Funkcje**:
+  - Wysyła żądania HTTP GET i POST do serwera przez PolarProxy
+  - Instaluje certyfikat CA PolarProxy w swoim trust store (przez entrypoint script)
+  - Działa w pętli, cyklicznie wysyłając żądania do serwera
+- **Konfiguracja proxy**:
+  - `HTTPS_PROXY=http://polarproxy:1080`: Cały ruch HTTPS idzie przez PolarProxy
+  - Dzięki temu PolarProxy może przechwycić i odszyfrować komunikację
+- **Zależności**: Czeka na healthcheck serwera i zakończenie cert-installer
+
+### Przepływ komunikacji
 
 ```
+Client → PolarProxy (port 1080) → Server (port 8443)
+         ↓
+    PCAP files (./logs/)
+```
+
+1. Klient wysyła żądanie HTTPS do serwera przez proxy (PolarProxy)
+2. PolarProxy przechwytuje połączenie TLS
+3. PolarProxy nawiązuje osobne połączenie TLS z serwerem
+4. PolarProxy deszyfruje komunikację i zapisuje do PCAP
+5. PolarProxy przekazuje żądanie do serwera i odpowiedź z powrotem do klienta
+6. Klient otrzymuje odpowiedź (nie wiedząc o przechwyceniu)
 
 ---
 
@@ -103,7 +169,7 @@ Klient wysyła żądania GET i POST do serwera.
 
 ### 1. Przechwytywanie ruchu
 
-PolarProxy automatycznie przechwytuje ruch i zapisuje go do plików PCAP.
+PolarProxy automatycznie przechwytuje ruch i zapisuje go do plików PCAP w katalogu `./logs/`.
 
 ### 2. Analiza plików PCAP
 
@@ -122,5 +188,17 @@ def analyze_pcap(file_path):
         if packet.haslayer(TLS):
             print(f"TLS Packet: {packet.summary()}")
 
-analyze_pcap("./pcaps/capture.pcap")
+analyze_pcap("./logs/capture.pcap")
 ```
+
+### 3. Analiza w Wireshark
+
+```bash
+wireshark ./logs/proxy-*.pcap
+```
+
+W Wireshark zobaczysz:
+- Odszyfrowane żądania HTTP (GET, POST)
+- Pełne payload'y JSON
+- Nagłówki HTTP
+- Wszystkie szczegóły komunikacji, które normalnie byłyby zaszyfrowane w TLS
