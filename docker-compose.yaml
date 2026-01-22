@@ -73,6 +73,23 @@ services:
     networks:
       - app_network
 
+  # Network sniffer that captures encrypted traffic
+  sniffer:
+    image: nicolaka/netshoot@sha256:97f63b691358bee25925d7ff0a33ba8b42215986aa477b9fc08922b5be600fcf # v0.15
+    container_name: sniffer
+    restart: no
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    network_mode: "service:server"
+    volumes:
+      - ./sniffer/captures:/captures
+    command: >
+      sh -c "
+      echo 'Starting network capture of encrypted traffic...';
+      tcpdump -i any -w /captures/encrypted-traffic.pcap 'tcp port 8443'
+      "
+
   wireshark:
     image: lscr.io/linuxserver/wireshark:latest
     container_name: wireshark
@@ -86,9 +103,10 @@ services:
     volumes:
       - ./wireshark_config:/config
       - ./polar-proxy/logs:/pcaps:ro
+      - ./sniffer/captures:/encrypted-pcaps:ro
     ports:
-      - 3010:3000 #optional
-      - 3001:3001 #optional
+      - 3010:3000
+      - 3001:3001
     shm_size: "1gb"
     networks:
       - app_network

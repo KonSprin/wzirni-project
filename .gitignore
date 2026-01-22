@@ -214,6 +214,7 @@ client/certs/polarproxy.crt
 
 # Wireshark
 wireshark_config
+*.pcap
 
 # Certificates
 server/certs/
