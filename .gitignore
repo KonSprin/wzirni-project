@@ -211,3 +211,6 @@ __marimo__/
 polar-proxy/logs/
 polar-proxy/pcaps/
 client/certs/polarproxy.crt
+
+#
+wireshark_config

@@ -7,8 +7,8 @@ services:
       - 8443:8443
     healthcheck:
       test: curl --fail --insecure https://localhost:8443/health || exit 1
-      interval: 1s
-      timeout: 10s
+      interval: 30s
+      timeout: 30s
       retries: 3
       start_period: 1s
     networks:
@@ -31,8 +31,6 @@ services:
       - app_network
     volumes:
       - polarproxy-certs:/certs:ro
-    # environment:
-    #   - HTTPS_PROXY=http://polarproxy:10443
 
   cert-installer:
     image: alpine:latest
@@ -46,10 +44,15 @@ services:
       - polarproxy-certs:/certs
     command: >
       sh -c "
+      if [ -f /certs/polarproxy.crt ]; then
+        echo 'Certificate already exists, skipping download';
+        exit 0;
+      fi;
       apk add --no-cache curl &&
       sleep 2 &&
       curl -o /certs/polarproxy.crt http://polarproxy:10080/polarproxy.cer &&
-      chmod 644 /certs/polarproxy.crt
+      chmod 644 /certs/polarproxy.crt &&
+      echo 'Certificate downloaded successfully'
       "
 
   polarproxy:
@@ -67,6 +70,31 @@ services:
     command: -v -p 10443,80,443 -o /var/log/PolarProxy/ --certhttp 10080 --pcapoverip 0.0.0.0:57012 --httpconnect 1080 --leafcert sign
     networks:
       - app_network
+
+  wireshark:
+    image: lscr.io/linuxserver/wireshark:latest
+    container_name: wireshark
+    restart: no
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    volumes:
+      - ./wireshark_config:/config
+      - ./polar-proxy/logs:/pcaps:ro
+    ports:
+      - 3010:3000 #optional
+      - 3001:3001 #optional
+    shm_size: "1gb"
+    networks:
+      - app_network
+    labels:
+      - homepage.group=Server
+      - homepage.name=Wireshark
+      - homepage.icon=wireshark.png
+      - homepage.href=https://192.168.100.14:3001
 
 networks:
   app_network:
