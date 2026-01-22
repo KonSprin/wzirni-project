@@ -16,6 +16,7 @@ Projekt ma na celu analizę szyfrowanego ruchu sieciowego z wykorzystaniem narz�
 
 ```
 ├── client
+│   ├── certs/                      # Certyfikaty PolarProxy (generowane automatycznie)
 │   ├── Dockerfile
 │   ├── docker-entrypoint.sh
 │   ├── main.py
@@ -24,17 +25,17 @@ Projekt ma na celu analizę szyfrowanego ruchu sieciowego z wykorzystaniem narz�
 ├── poetry.lock
 ├── polar-proxy
 │   ├── Dockerfile
-│   ├── home
-│   └── logs
+│   ├── home/                       # Katalog domowy PolarProxy
+│   └── logs/                       # Pliki PCAP (generowane automatycznie)
 ├── pyproject.toml
 ├── README.md
 ├── server
-│   ├── cert.pem
+│   ├── certs/                      # Certyfikaty serwera (generowane automatycznie)
 │   ├── Dockerfile
-│   ├── key.pem
 │   ├── main.py
 │   └── pyproject.toml
-└── wireshark-config
+├── wireshark_config/               # Konfiguracja Wireshark (generowana automatycznie)
+└── .gitignore
 ```
 
 ---
@@ -44,11 +45,18 @@ Projekt ma na celu analizę szyfrowanego ruchu sieciowego z wykorzystaniem narz�
 Projekt składa się z pięciu głównych kontenerów Docker, które współpracują ze sobą w celu przechwytywania i analizy szyfrowanego ruchu sieciowego:
 
 ### 1. **Server** (`server`)
-- **Rola**: Serwer HTTPS oparty na FastAPI
+- **Rola**: Serwer HTTPS oparty na FastAPI z symulacją rzeczywistej aplikacji
 - **Port**: 8443 (HTTPS)
 - **Funkcje**:
-  - Udostępnia API z kilkoma endpointami (`/`, `/data`, `/echo`, `/health`)
-  - Używa certyfikatu self-signed (generowanego automatycznie przy starcie)
+  - Udostępnia API z wieloma endpointami symulującymi rzeczywistą aplikację:
+    - `/users/register` - rejestracja użytkowników
+    - `/users/login` - logowanie i zarządzanie sesjami
+    - `/messages` - wysyłanie i odbieranie wiadomości
+    - `/search` - wyszukiwanie z parametrami
+    - `/data/large` - duże payloady do analizy przepustowości
+    - `/upload/metadata` - upload metadanych plików
+  - Automatycznie generuje certyfikaty self-signed przy pierwszym uruchomieniu
+  - Certyfikaty są zapisywane w katalogu `server/certs/` (NIE commitowane do git)
   - Działa jako punkt końcowy, do którego łączy się klient
 - **Healthcheck**: Sprawdza dostępność serwera przed uruchomieniem klienta
 
@@ -79,11 +87,17 @@ Projekt składa się z pięciu głównych kontenerów Docker, które współprac
 - **Zależności**: Czeka na uruchomienie PolarProxy
 
 ### 4. **Client** (`client`)
-- **Rola**: Klient HTTP/HTTPS wysyłający żądania do serwera
+- **Rola**: Klient HTTP/HTTPS symulujący rzeczywistego użytkownika aplikacji
 - **Funkcje**:
-  - Wysyła żądania HTTP GET i POST do serwera przez PolarProxy
+  - Symuluje pełny workflow użytkownika:
+    - Rejestracja i logowanie
+    - Wysyłanie wiadomości o różnej długości
+    - Wyszukiwanie z różnymi parametrami
+    - Pobieranie danych (małe i duże payloady)
+    - Upload metadanych plików
   - Instaluje certyfikat CA PolarProxy w swoim trust store (przez entrypoint script)
-  - Działa w pętli, cyklicznie wysyłając żądania do serwera co 5 sekund
+  - Generuje ruch o zmiennych wzorcach (losowe opóźnienia, różne rozmiary payloadów)
+  - Działa w pętli z realistycznymi wzorcami czasowymi
 - **Konfiguracja proxy**:
   - `HTTPS_PROXY=http://polarproxy:1080`: Cały ruch HTTPS idzie przez PolarProxy
   - Dzięki temu PolarProxy może przechwycić i odszyfrować komunikację
@@ -93,7 +107,7 @@ Projekt składa się z pięciu głównych kontenerów Docker, które współprac
 - **Rola**: Graficzny interfejs do analizy przechwyconych plików PCAP
 - **Porty**:
   - 3010: Web GUI (dostępny przez przeglądarkę)
-  - 3011: HTTPS (opcjonalny)
+  - 3001: HTTPS (opcjonalny)
 - **Funkcje**:
   - Udostępnia pełny interfejs Wireshark przez przeglądarkę
   - Automatycznie montuje katalog z plikami PCAP z PolarProxy
@@ -159,6 +173,12 @@ docker-compose build
 docker-compose up
 ```
 
+**Przy pierwszym uruchomieniu:**
+- Serwer automatycznie wygeneruje certyfikaty TLS w katalogu `server/certs/`
+- PolarProxy wygeneruje swój certyfikat CA
+- Cert-installer pobierze certyfikat CA i udostępni go klientowi
+- Wszystkie certyfikaty są automatycznie konfigurowane
+
 ### 2. Dostęp do usług
 
 - **Serwer:** Dostępny pod adresem `https://localhost:8443`
@@ -177,6 +197,22 @@ Aby usunąć również wolumeny (certyfikaty i konfigurację):
 docker-compose down -v
 ```
 
+### 4. Czyszczenie certyfikatów i danych
+
+```bash
+# Usuń certyfikaty serwera
+rm -rf server/certs/
+
+# Usuń logi PolarProxy i certyfikaty
+rm -rf polar-proxy/logs/* polar-proxy/home/*
+
+# Usuń certyfikaty klienta
+rm -rf client/certs/*
+
+# Usuń konfigurację Wireshark
+rm -rf wireshark_config/
+```
+
 ---
 
 ## Analiza ruchu sieciowego
@@ -185,7 +221,20 @@ docker-compose down -v
 
 PolarProxy automatycznie przechwytuje ruch i zapisuje go do plików PCAP w katalogu `./polar-proxy/logs/`. Pliki są nazywane według wzorca `proxy-<timestamp>.pcap`.
 
-### 2. Analiza w Wireshark (GUI)
+### 2. Rodzaje ruchu do analizy
+
+Klient generuje różnorodny ruch HTTP/HTTPS:
+
+- **Autentykacja**: Rejestracja użytkowników, logowanie, zarządzanie sesjami
+- **Wiadomości**: Wysyłanie wiadomości o różnej długości (krótkie, średnie, długie, JSON)
+- **Wyszukiwanie**: Zapytania z różnymi parametrami i kategoriami
+- **Transfer danych**: Małe payloady (`/data`) i duże datasety (`/data/large`)
+- **Upload**: Metadane plików
+- **Różne metody HTTP**: GET, POST, DELETE
+- **Różne kody statusu**: 200, 404, 409, 401
+- **Zmienne wzorce czasowe**: Losowe opóźnienia symulujące rzeczywistego użytkownika
+
+### 3. Analiza w Wireshark (GUI)
 
 1. Otwórz przeglądarkę i przejdź do `http://localhost:3010`
 2. Zaloguj się (domyślne hasło znajduje się w logach kontenera przy pierwszym uruchomieniu)
@@ -194,18 +243,27 @@ PolarProxy automatycznie przechwytuje ruch i zapisuje go do plików PCAP w katal
 5. Otwórz dowolny plik `proxy-*.pcap`
 
 **Co zobaczysz:**
-- Odszyfrowane żądania HTTP (GET, POST)
+- Odszyfrowane żądania HTTP (GET, POST, DELETE)
 - Pełne payload'y JSON w plain text
+- Dane logowania (username, password) w plain text
+- Session tokeny
+- Treść wiadomości
+- Query parametry wyszukiwania
 - Wszystkie nagłówki HTTP
 - Szczegóły komunikacji, które normalnie byłyby zaszyfrowane w TLS
 
 **Przydatne filtry Wireshark:**
 - `http` - pokaż tylko ruch HTTP
 - `http.request.method == "POST"` - tylko żądania POST
-- `http.request.uri contains "/data"` - żądania do konkretnego endpointu
+- `http.request.uri contains "/login"` - żądania logowania
+- `http.request.uri contains "/messages"` - wiadomości
 - `json` - pakiety zawierające JSON
+- `http.response.code == 200` - tylko poprawne odpowiedzi
+- `http.response.code == 401` - nieautoryzowane żądania
+- `http contains "password"` - pakiety zawierające hasła (!)
+- `http contains "session_token"` - pakiety z tokenami sesji
 
-### 3. Analiza w Wireshark (linia poleceń)
+### 4. Analiza w Wireshark (linia poleceń)
 
 Możesz też analizować pliki PCAP bezpośrednio na hoście:
 
@@ -213,7 +271,7 @@ Możesz też analizować pliki PCAP bezpośrednio na hoście:
 wireshark ./polar-proxy/logs/proxy-*.pcap
 ```
 
-### 4. Analiza programowa (Python + Scapy)
+### 5. Analiza programowa (Python + Scapy)
 
 Przykładowy skrypt do analizy plików PCAP:
 
@@ -222,14 +280,49 @@ from scapy.all import *
 
 def analyze_pcap(file_path):
     packets = rdpcap(file_path)
+
+    # Count HTTP methods
+    methods = {}
     for packet in packets:
-        if packet.haslayer(IP):
-            print(f"Source: {packet[IP].src}, Destination: {packet[IP].dst}")
         if packet.haslayer(Raw):
-            print(f"Payload: {packet[Raw].load}")
+            payload = packet[Raw].load.decode('utf-8', errors='ignore')
+            for method in ['GET', 'POST', 'DELETE', 'PUT']:
+                if payload.startswith(method):
+                    methods[method] = methods.get(method, 0) + 1
+
+    print(f"HTTP Methods: {methods}")
+
+    # Extract URLs
+    for packet in packets:
+        if packet.haslayer(Raw):
+            payload = packet[Raw].load.decode('utf-8', errors='ignore')
+            if 'HTTP' in payload:
+                lines = payload.split('\r\n')
+                if lines:
+                    print(f"Request: {lines[0]}")
 
 analyze_pcap("./polar-proxy/logs/proxy-20250122-120000.pcap")
 ```
+
+### 6. Przykładowe scenariusze analizy
+
+**Śledzenie sesji użytkownika:**
+1. Znajdź żądanie `/users/login` - zobaczysz credentials w plain text
+2. Wyodrębnij `session_token` z odpowiedzi
+3. Znajdź kolejne żądania z tym tokenem w headerach/body
+4. Śledź całą aktywność użytkownika w ramach sesji
+
+**Analiza wzorców czasowych:**
+1. Wyeksportuj timestamps wszystkich pakietów
+2. Oblicz interwały między żądaniami
+3. Zidentyfikuj regularne wzorce (polling co 5s)
+4. Wykryj bursts aktywności (workflow cycles)
+
+**Analiza rozmiarów payloadów:**
+1. Filtruj żądania do `/data` vs `/data/large`
+2. Porównaj rozmiary odpowiedzi
+3. Obserwuj wpływ na przepustowość
+4. Analizuj fragmentację pakietów dla dużych payloadów
 
 ---
 
@@ -254,35 +347,70 @@ Parametry:
 
 ### Serwer
 
-Serwer FastAPI nasłuchuje na porcie `8443` z self-signed certyfikatami. Certyfikaty są generowane automatycznie przy pierwszym uruchomieniu.
+Serwer FastAPI nasłuchuje na porcie `8443` z automatycznie generowanymi certyfikatami self-signed. Certyfikaty są tworzone przy pierwszym uruchomieniu i zapisywane w `server/certs/`.
+
+**Lokalizacja certyfikatów**: `server/certs/`
+- `key.pem` - klucz prywatny
+- `cert.pem` - certyfikat publiczny
+
+**Ważność certyfikatów**: 365 dni
 
 ### Klient
 
-Klient wysyła żądania w pętli co 5 sekund. Możesz zmienić częstotliwość w pliku `client/main.py`:
+Klient symuluje rzeczywistego użytkownika z różnorodnymi wzorcami aktywności:
+
+**Główny workflow** (co 5 cykli pollingu):
+- Rejestracja/logowanie użytkownika
+- Wysyłanie 1-3 wiadomości
+- Sprawdzanie wiadomości
+- Wyszukiwanie
+- Pobieranie danych (losowo małe lub duże)
+- Upload metadanych (30% szans)
+- Echo test
+
+**Lekki polling** (między workflow):
+- Losowe pojedyncze akcje
+- Opóźnienia 3-7 sekund
+
+Możesz dostosować wzorce w pliku `client/main.py`:
 
 ```python
-time.sleep(5)  # Zmień na inną wartość w sekundach
+# Zmień częstotliwość głównego workflow
+if cycle_count % 5 == 0:  # Zmień 5 na inną wartość
+
+# Zmień opóźnienia
+time.sleep(random.uniform(3, 7))  # Zmień zakres
 ```
 
 ### Wireshark
 
-Konfiguracja Wireshark jest zachowywana w katalogu `./wireshark-config`. Jeśli chcesz zresetować konfigurację, usuń ten katalog:
+Konfiguracja Wireshark jest zachowywana w katalogu `./wireshark_config`. Jeśli chcesz zresetować konfigurację, usuń ten katalog:
 
 ```bash
-rm -rf ./wireshark-config
+rm -rf ./wireshark_config
 ```
 
 ---
 
 ## Rozwiązywanie problemów
 
-### Certyfikaty nie działają
+### Certyfikaty serwera nie generują się
+
+Jeśli serwer nie może wygenerować certyfikatów:
+
+1. Sprawdź czy OpenSSL jest zainstalowany w kontenerze
+2. Sprawdź logi serwera: `docker logs server`
+3. Upewnij się, że katalog `server/certs/` ma odpowiednie uprawnienia
+4. Ręcznie utwórz katalog: `mkdir -p server/certs`
+
+### Certyfikaty PolarProxy nie działają
 
 Jeśli klient ma problemy z certyfikatami:
 
 1. Usuń wolumen z certyfikatami: `docker-compose down -v`
 2. Usuń katalog z certyfikatami: `rm -rf ./client/certs`
 3. Uruchom ponownie: `docker-compose up --build`
+4. Sprawdź logi cert-installer: `docker logs cert-installer`
 
 ### PolarProxy nie generuje plików PCAP
 
@@ -303,6 +431,7 @@ chmod 755 ./polar-proxy/logs/
 1. Upewnij się, że PolarProxy już wygenerował pliki (sprawdź `./polar-proxy/logs/`)
 2. Odśwież listę plików w interfejsie Wireshark
 3. Sprawdź czy wolumen jest poprawnie zamontowany: `docker inspect wireshark`
+4. Sprawdź logi Wireshark: `docker logs wireshark`
 
 ### Port 3010 już zajęty
 
@@ -313,3 +442,19 @@ ports:
   - 8080:3000  # Zmień 3010 na dowolny wolny port
   - 8081:3001
 ```
+
+### Klient nie może połączyć się z serwerem
+
+1. Sprawdź healthcheck serwera: `docker ps` (powinien pokazać "healthy")
+2. Sprawdź logi serwera: `docker logs server`
+3. Sprawdź logi klienta: `docker logs client`
+4. Upewnij się, że wszystkie kontenery są w tej samej sieci: `docker network inspect wzirni-project_app_network`
+
+### Brak ruchu w PCAP
+
+1. Sprawdź czy klient działa: `docker logs client --follow`
+2. Sprawdź czy proxy jest poprawnie skonfigurowany: `docker logs polar-proxy`
+3. Upewnij się, że zmienna `HTTPS_PROXY` jest ustawiona w kliencie
+4. Sprawdź czy PolarProxy nasłuchuje na porcie 1080: `docker exec polar-proxy netstat -tlnp`
+
+---

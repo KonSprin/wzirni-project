@@ -3,6 +3,8 @@ services:
     build: ./server
     container_name: server
     restart: no
+    volumes:
+      - ./server/certs:/app/certs
     ports:
       - 8443:8443
     healthcheck:

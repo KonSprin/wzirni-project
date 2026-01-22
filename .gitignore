@@ -212,5 +212,12 @@ polar-proxy/logs/
 polar-proxy/pcaps/
 client/certs/polarproxy.crt
 
-#
+# Wireshark
 wireshark_config
+
+# Certificates
+server/certs/
+*.pem
+*.crt
+*.key
+*.cer
