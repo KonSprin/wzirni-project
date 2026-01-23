@@ -116,6 +116,22 @@ services:
       - homepage.icon=wireshark.png
       - homepage.href=https://192.168.100.14:3001
 
+  docs:
+    build: ./docs
+    container_name: docs
+    restart: no
+    ports:
+      - 8000:8000
+    volumes:
+      - ./docs:/docs
+    networks:
+      - app_network
+    labels:
+      - homepage.group=Server
+      - homepage.name=MKDocs
+      - homepage.icon=mkdocs.png
+      - homepage.href=http://192.168.100.14:8000
+
 networks:
   app_network:
     driver: bridge

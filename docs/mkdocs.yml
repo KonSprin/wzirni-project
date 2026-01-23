@@ -1,0 +1,66 @@
+site_name: Network Traffic Analysis Documentation
+site_description: Documentation for encrypted network traffic analysis project
+site_author: Konrad Springer, Adam Tylec
+
+theme:
+  name: material
+  language: en
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Installation: getting-started/installation.md
+    - Quick Start: getting-started/quickstart.md
+  - Architecture:
+    - Overview: architecture/overview.md
+    - Containers: architecture/containers.md
+    # - Network Flow: architecture/network-flow.md
+  - Traffic Analysis:
+    # - Introduction: analysis/introduction.md
+    - Wireshark Analysis: analysis/wireshark.md
+    # - Python Analysis: analysis/python.md
+    # - Scenarios: analysis/scenarios.md
+  # - Configuration:
+    # - PolarProxy: configuration/polarproxy.md
+    # - Server: configuration/server.md
+    # - Client: configuration/client.md
+    # - Sniffer: configuration/sniffer.md
+  - Troubleshooting: troubleshooting.md
+  - Reference:
+    - API Endpoints: reference/api.md
+    # - File Locations: reference/files.md

@@ -3,6 +3,7 @@ repos:
   rev: v2.3.0
   hooks:
     - id: check-yaml
+    - id: check-toml
     - id: end-of-file-fixer
     - id: trailing-whitespace
 
@@ -25,3 +26,31 @@ repos:
   - id: commitizen-branch
     stages:
     - pre-push
+
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.20.0
+  hooks:
+  - id: markdownlint-cli2
+    args: [ --fix ]
+
+- repo: https://github.com/adrienverge/yamllint.git
+  rev: v1.37.1
+  hooks:
+  - id: yamllint
+    args:
+      - --no-warnings
+      - -d
+      - "{extends: relaxed, rules: {line-length: {max: 90}}}"
+
+- repo: https://github.com/codespell-project/codespell
+  rev: v2.4.1
+  hooks:
+  - id: codespell
+    # args: [--toml, pyproject-codespell.precommit-toml]
+    additional_dependencies:
+      - tomli
+
+- repo: https://github.com/abravalheri/validate-pyproject
+  rev: v0.24.1
+  hooks:
+  - id: validate-pyproject
