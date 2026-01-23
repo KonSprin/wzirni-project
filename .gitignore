@@ -207,11 +207,11 @@ marimo/_lsp/
 __marimo__/
 
 # Logs
-
 polar-proxy/logs/
 polar-proxy/pcaps/
 client/certs/polarproxy.crt
 **old**
+cicflowmeter/output
 
 # Wireshark
 wireshark_config

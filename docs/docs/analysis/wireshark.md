@@ -98,7 +98,9 @@ http.content_type contains "json"      # JSON content type
 
 ## Analyzing Encrypted Traffic
 
+<!-- markdownlint-disable MD024 -->
 ### What You Can See
+<!-- markdownlint-enable  MD024 -->
 
 When analyzing encrypted PCAP files from the sniffer:
 
@@ -119,7 +121,9 @@ When analyzing encrypted PCAP files from the sniffer:
 - JSON payloads
 - Any application layer data
 
+<!-- markdownlint-disable MD024 -->
 ### Useful Filters
+<!-- markdownlint-enable  MD024 -->
 
 #### TLS Handshake
 

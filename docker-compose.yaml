@@ -116,6 +116,17 @@ services:
       - homepage.icon=wireshark.png
       - homepage.href=https://192.168.100.14:3001
 
+  cicflowmeter:
+    build: ./cicflowmeter
+    container_name: cicflowmeter
+    restart: no
+    volumes:
+      - ./sniffer/captures:/pcaps:ro
+      - ./cicflowmeter/output:/output
+    networks:
+      - app_network
+    # command: sh -c uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/flow.csv
+
   docs:
     build: ./docs
     container_name: docs
