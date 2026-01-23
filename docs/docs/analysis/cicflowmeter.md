@@ -92,60 +92,60 @@ All results are saved to `./cicflowmeter/output/analysis/`:
 #### Tables (CSV)
 
 1. **summary_statistics.csv**
-   - Total flows, unique IPs
-   - Duration statistics
-   - Average packet size and throughput
+    - Total flows, unique IPs
+    - Duration statistics
+    - Average packet size and throughput
 
 2. **packet_size_summary.csv**
-   - Mean, max, min packet sizes
-   - Breakdown by direction (forward/backward)
+    - Mean, max, min packet sizes
+    - Breakdown by direction (forward/backward)
 
 3. **strong_correlations.csv**
-   - Feature pairs with correlation > 0.7
-   - Helps identify redundant or related features
+    - Feature pairs with correlation > 0.7
+    - Helps identify redundant or related features
 
 4. **summary_report.csv**
-   - Comprehensive overview
-   - Flow type distribution
-   - Periodic traffic detection results
+    - Comprehensive overview
+    - Flow type distribution
+    - Periodic traffic detection results
 
 5. **flows_classified.csv**
-   - Original flow data with added classifications
-   - `flow_type` - Classified traffic type
-   - `timing_category` - Fast/medium/slow
-   - `traffic_pattern` - Steady/bursty
-   - `is_periodic` - Periodic traffic detection
+    - Original flow data with added classifications
+    - `flow_type` - Classified traffic type
+    - `timing_category` - Fast/medium/slow
+    - `traffic_pattern` - Steady/bursty
+    - `is_periodic` - Periodic traffic detection
 
 #### Visualizations (PNG)
 
 1. **flow_classification.png**
-   - Pie chart: Distribution of flow types
-   - Box plot: Flow duration by type
+    - Pie chart: Distribution of flow types
+    - Box plot: Flow duration by type
 
 2. **timing_analysis.png**
-   - Timing category distribution
-   - Traffic pattern (steady vs bursty)
-   - IAT mean histogram
-   - IAT mean vs standard deviation scatter plot
+    - Timing category distribution
+    - Traffic pattern (steady vs bursty)
+    - IAT mean histogram
+    - IAT mean vs standard deviation scatter plot
 
 3. **packet_size_analysis.png**
-   - Forward vs backward packet size scatter
-   - Packet size category distribution
-   - Packet size histogram
-   - Packet size by flow type box plot
+    - Forward vs backward packet size scatter
+    - Packet size category distribution
+    - Packet size histogram
+    - Packet size by flow type box plot
 
 4. **periodic_traffic.png**
-   - Periodic vs non-periodic distribution
-   - Traffic patterns over time
+    - Periodic vs non-periodic distribution
+    - Traffic patterns over time
 
 5. **correlation_heatmap.png**
-   - Correlation matrix of key features
-   - Identifies relationships between metrics
+    - Correlation matrix of key features
+    - Identifies relationships between metrics
 
 6. **traffic_timeline.png**
-   - Throughput over time
-   - Packet size over time (colored by flow type)
-   - Flow duration over time
+    - Throughput over time
+    - Packet size over time (colored by flow type)
+    - Flow duration over time
 
 ## Flow Classification
 
@@ -325,22 +325,22 @@ df['is_burst'] = (df['flow_iat_std'] > 2 * df['flow_iat_mean'])
 
 1. Ensure traffic was captured:
 
-   ```bash
-   ls -lh ./sniffer/captures/encrypted-traffic.pcap
-   ```
+    ```bash
+    ls -lh ./sniffer/captures/encrypted-traffic.pcap
+    ```
 
 2. Check PCAP file has data:
 
-   ```bash
-   tcpdump -r ./sniffer/captures/encrypted-traffic.pcap -c 10
-   ```
+    ```bash
+    tcpdump -r ./sniffer/captures/encrypted-traffic.pcap -c 10
+    ```
 
 3. Verify CICFlowMeter parameters:
 
-   ```bash
-   docker compose run --rm cicflowmeter sh -c \
-     "uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/test.csv"
-   ```
+    ```bash
+    docker compose run --rm cicflowmeter sh -c \
+        "uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/test.csv"
+    ```
 
 ### Analysis Script Fails
 
@@ -350,29 +350,29 @@ df['is_burst'] = (df['flow_iat_std'] > 2 * df['flow_iat_mean'])
 
 1. Check CSV exists:
 
-   ```bash
-   ls -lh ./cicflowmeter/output/flow.csv
-   ```
+    ```bash
+    ls -lh ./cicflowmeter/output/flow.csv
+    ```
 
 2. Verify CSV format:
 
-   ```bash
-   head -n 2 ./cicflowmeter/output/flow.csv
-   ```
+    ```bash
+    head -n 2 ./cicflowmeter/output/flow.csv
+    ```
 
 3. Install missing dependencies:
 
-   ```bash
-   poetry install
-   ```
+    ```bash
+    poetry install
+    ```
 
 4. Check for NaN values:
 
-   ```python
-   import pandas as pd
-   df = pd.read_csv('cicflowmeter/output/flow.csv')
-   print(df.isnull().sum())
-   ```
+    ```python
+    import pandas as pd
+    df = pd.read_csv('cicflowmeter/output/flow.csv')
+    print(df.isnull().sum())
+    ```
 
 ### Missing Visualizations
 
@@ -382,47 +382,47 @@ df['is_burst'] = (df['flow_iat_std'] > 2 * df['flow_iat_mean'])
 
 1. Ensure matplotlib backend is set:
 
-   ```bash
-   export MPLBACKEND=Agg
-   python flow_analyzer.py
-   ```
+    ```bash
+    export MPLBACKEND=Agg
+    python flow_analyzer.py
+    ```
 
 2. Check directory permissions:
 
-   ```bash
-   mkdir -p cicflowmeter/output/analysis
-   chmod 755 cicflowmeter/output/analysis
-   ```
+    ```bash
+    mkdir -p cicflowmeter/output/analysis
+    chmod 755 cicflowmeter/output/analysis
+    ```
 
 3. Run with verbose logging:
 
-   ```python
-   logging.basicConfig(level=logging.DEBUG)
-   ```
+    ```python
+    logging.basicConfig(level=logging.DEBUG)
+    ```
 
 ## Best Practices
 
 1. **Capture Sufficient Traffic**
-   - Run client for at least 1-2 minutes before analysis
-   - More flows = more reliable patterns
+    - Run client for at least 1-2 minutes before analysis
+    - More flows = more reliable patterns
 
 2. **Compare Encrypted vs Decrypted**
-   - Analyze both to understand what statistical analysis reveals
-   - Validate that features are consistent
+    - Analyze both to understand what statistical analysis reveals
+    - Validate that features are consistent
 
 3. **Regular Analysis**
-   - Run CICFlowMeter periodically during long captures
-   - Monitor traffic patterns over time
+    - Run CICFlowMeter periodically during long captures
+    - Monitor traffic patterns over time
 
 4. **Feature Selection**
-   - Not all 83 features are useful for every task
-   - Use correlation analysis to identify redundant features
-   - Focus on features relevant to your use case
+    - Not all 83 features are useful for every task
+    - Use correlation analysis to identify redundant features
+    - Focus on features relevant to your use case
 
 5. **Document Findings**
-   - Save classification rules for reproducibility
-   - Note which features are most discriminative
-   - Track accuracy of pattern detection
+    - Save classification rules for reproducibility
+    - Note which features are most discriminative
+    - Track accuracy of pattern detection
 
 ## Further Reading
 
