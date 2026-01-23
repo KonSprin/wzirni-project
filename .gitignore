@@ -211,7 +211,7 @@ polar-proxy/logs/
 polar-proxy/pcaps/
 client/certs/polarproxy.crt
 **old**
-cicflowmeter/output
+# cicflowmeter/output
 
 # Wireshark
 wireshark_config

@@ -1,0 +1,4 @@
+Direction,Mean (bytes),Max (bytes),Min (bytes)
+Forward,155.45035466670086,1641,60
+Backward,426.09601393976396,10073,72
+Overall,262.2165026517631,10073,60

@@ -1,0 +1,3 @@
+Feature 1,Feature 2,Correlation
+flow_duration,flow_iat_mean,0.9994827476517703
+pkt_size_avg,bwd_pkt_len_mean,0.9975747244818095

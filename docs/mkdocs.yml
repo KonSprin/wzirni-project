@@ -49,18 +49,9 @@ nav:
   - Architecture:
     - Overview: architecture/overview.md
     - Containers: architecture/containers.md
-    # - Network Flow: architecture/network-flow.md
   - Traffic Analysis:
-    # - Introduction: analysis/introduction.md
     - Wireshark Analysis: analysis/wireshark.md
-    # - Python Analysis: analysis/python.md
-    # - Scenarios: analysis/scenarios.md
-  # - Configuration:
-    # - PolarProxy: configuration/polarproxy.md
-    # - Server: configuration/server.md
-    # - Client: configuration/client.md
-    # - Sniffer: configuration/sniffer.md
+    - CICFlowMeter Analysis: analysis/cicflowmeter.md
   - Troubleshooting: troubleshooting.md
   - Reference:
     - API Endpoints: reference/api.md
-    # - File Locations: reference/files.md

@@ -1,8 +1,10 @@
 # Container Architecture
 
-The project consists of six Docker containers working together to capture and analyze network traffic.
+The project consists of multiple Docker containers working together to capture, decrypt, and analyze network traffic.
 
-## Server Container
+## Core Containers
+
+### Server Container
 
 **Purpose**: FastAPI HTTPS server simulating a real application
 
@@ -29,7 +31,7 @@ The project consists of six Docker containers working together to capture and an
 
 **Healthcheck**: Regular checks on `/health` endpoint to ensure server is ready
 
-## PolarProxy Container
+### PolarProxy Container
 
 **Purpose**: Transparent TLS proxy for traffic decryption
 
@@ -59,7 +61,7 @@ The project consists of six Docker containers working together to capture and an
 
 **Output**: `proxy-YYYYMMDD-HHMMSS.pcap` files in `./polar-proxy/logs/`
 
-## Cert-installer Container
+### Cert-installer Container
 
 **Purpose**: Download and distribute PolarProxy CA certificate
 
@@ -79,7 +81,7 @@ The project consists of six Docker containers working together to capture and an
 4. Save as `polarproxy.crt` with 644 permissions
 5. Exit successfully
 
-## Client Container
+### Client Container
 
 **Purpose**: Simulate realistic user traffic
 
@@ -115,7 +117,7 @@ The project consists of six Docker containers working together to capture and an
 - Waits for PolarProxy startup
 - Waits for cert-installer completion
 
-## Sniffer Container
+### Sniffer Container
 
 **Purpose**: Capture encrypted traffic as seen by network observer
 
@@ -136,7 +138,7 @@ tcpdump -i any -w /captures/encrypted-traffic.pcap 'tcp port 8443'
 
 **Output**: `encrypted-traffic.pcap` in `./sniffer/captures/`
 
-## Wireshark Container
+### Wireshark Container
 
 **Purpose**: Web-based Wireshark GUI for traffic analysis
 
@@ -158,6 +160,107 @@ tcpdump -i any -w /captures/encrypted-traffic.pcap 'tcp port 8443'
 
 **Access**: Navigate to `http://localhost:3010` in browser
 
+### Docs Container
+
+**Purpose**: Serve project documentation
+
+- **Port**: 8000
+- **Image**: squidfunk/mkdocs-material
+- **Key Features**:
+  - Complete project documentation
+  - Material theme with dark mode
+  - Live reload during development
+  - Search functionality
+
+**Access**: Navigate to `http://localhost:8000` in browser
+
+## Analysis Containers
+
+### CICFlowMeter Container
+
+**Purpose**: Extract network flow features from PCAP files
+
+- **Image**: Custom (Python 3.12 + CICFlowMeter)
+- **Lifecycle**: Runs once per analysis, then exits
+- **Key Features**:
+  - Extracts 83 statistical features per flow
+  - Works on both encrypted and decrypted traffic
+  - Generates CSV output for further analysis
+
+**Command**:
+
+```bash
+uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/flow.csv
+```
+
+**Input Sources**:
+
+- `/pcaps/encrypted-traffic.pcap` - From sniffer container
+- `/pcaps/proxy-*.pcap` - From PolarProxy (decrypted)
+
+**Output**: `flow.csv` in `./cicflowmeter/output/`
+
+**Features Extracted**:
+
+- Basic flow info (IPs, ports, protocol, timestamp)
+- Packet statistics (count, size, direction)
+- Timing features (inter-arrival times, duration)
+- Throughput metrics (bytes/s, packets/s)
+- TCP flags (SYN, ACK, FIN, etc.)
+
+**Usage**:
+
+```bash
+# Analyze encrypted traffic
+docker compose run --rm cicflowmeter
+
+# Analyze decrypted traffic
+docker compose run --rm cicflowmeter sh -c \
+  "uv run cicflowmeter -f /pcaps/proxy-*.pcap -c /output/flow_decrypted.csv"
+```
+
+### Flow-Analyzer Container (Optional)
+
+**Purpose**: Analyze CICFlowMeter output and generate visualizations
+
+- **Image**: Custom (Python 3.11 + pandas + matplotlib + seaborn)
+- **Lifecycle**: Runs once per analysis, then exits
+- **Dependencies**: Requires CICFlowMeter to run first
+- **Key Features**:
+  - Flow classification (Large Data, Quick Request, Interactive, Bulk Transfer)
+  - Timing pattern analysis (periodic detection, burst detection)
+  - Packet size analysis and comparison
+  - Correlation analysis between features
+  - Comprehensive visualizations
+
+**Output Location**: `./cicflowmeter/output/analysis/`
+
+**Generated Files**:
+
+Tables (CSV):
+
+- `summary_statistics.csv` - Overall flow metrics
+- `packet_size_summary.csv` - Packet size breakdown
+- `strong_correlations.csv` - Highly correlated features
+- `summary_report.csv` - Comprehensive summary
+- `flows_classified.csv` - Flows with added classifications
+
+Visualizations (PNG):
+
+- `flow_classification.png` - Flow type distribution
+- `timing_analysis.png` - Timing patterns
+- `packet_size_analysis.png` - Packet size metrics
+- `periodic_traffic.png` - Periodic detection
+- `correlation_heatmap.png` - Feature correlations
+- `traffic_timeline.png` - Time series analysis
+
+**Usage**:
+
+```bash
+# After running CICFlowMeter
+poetry run python flow_analyzer.py
+```
+
 ## Container Dependencies
 
 ```text
@@ -166,6 +269,10 @@ cert-installer → depends on → polarproxy
     client → depends on → [server (healthy), polarproxy, cert-installer (completed)]
        ↓
    sniffer → network_mode → server
+       ↓
+cicflowmeter → depends on → sniffer (captures available)
+       ↓
+flow-analyzer → depends on → cicflowmeter (CSV available)
 ```
 
 ## Volumes
@@ -184,9 +291,42 @@ cert-installer → depends on → polarproxy
 - `./polar-proxy/home` → `/home/polarproxy/` in polarproxy
 - `./sniffer/captures` → `/captures` in sniffer
 - `./wireshark_config` → `/config` in wireshark
+- `./cicflowmeter/output` → `/output` in cicflowmeter
+- `./docs` → `/docs` in docs
 
 ## Network
 
 All containers (except sniffer) communicate through `app_network` (bridge driver).
 
 Sniffer uses `network_mode: "service:server"` to share server's network namespace.
+
+## Container Lifecycle Summary
+
+| Container | Lifecycle | Purpose |
+| ----------- | ----------- | --------- |
+| server | Long-running | Serve HTTPS API |
+| client | Long-running | Generate traffic |
+| polarproxy | Long-running | Decrypt TLS |
+| sniffer | Long-running | Capture encrypted traffic |
+| wireshark | Long-running | Traffic analysis GUI |
+| docs | Long-running | Documentation server |
+| cert-installer | One-shot | Download PolarProxy CA |
+| cicflowmeter | On-demand | Extract flow features |
+| flow-analyzer | On-demand | Analyze and visualize |
+
+## Resource Usage
+
+Approximate resource requirements:
+
+| Container | CPU | Memory | Disk |
+| ----------- | ----- | -------- | ------ |
+| server | Low | 50MB | Minimal |
+| client | Low | 50MB | Minimal |
+| polarproxy | Medium | 100MB | Grows with capture |
+| sniffer | Low | 30MB | Grows with capture |
+| wireshark | Medium-High | 500MB | Config only |
+| docs | Low | 50MB | Minimal |
+| cicflowmeter | Medium | 200MB | Output CSV |
+| flow-analyzer | Medium | 300MB | Visualizations |
+
+**Note**: PCAP files can grow large over time. Monitor `./polar-proxy/logs/` and `./sniffer/captures/` disk usage.
