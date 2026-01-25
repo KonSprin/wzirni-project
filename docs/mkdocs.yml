@@ -49,6 +49,7 @@ nav:
   - Architecture:
     - Overview: architecture/overview.md
     - Containers: architecture/containers.md
+    - Clients: architecture/clients.md
   - Traffic Analysis:
     - Wireshark Analysis: analysis/wireshark.md
     - CICFlowMeter Analysis: analysis/cicflowmeter.md

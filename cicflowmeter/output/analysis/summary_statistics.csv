@@ -1,9 +1,9 @@
 Metric,Value
-Total Flows,156
+Total Flows,106
 Unique Source IPs,2
 Unique Destination IPs,2
-Mean Flow Duration (s),0.0875
-Max Flow Duration (s),2.6281
-Min Flow Duration (s),0.0075
-Mean Packet Size (bytes),262.22
-Mean Throughput (bytes/s),109909.06
+Mean Flow Duration (s),0.1106
+Max Flow Duration (s),2.1118
+Min Flow Duration (s),0.0092
+Mean Packet Size (bytes),383.99
+Mean Throughput (bytes/s),140952.64

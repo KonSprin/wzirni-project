@@ -16,9 +16,10 @@ services:
     networks:
       - app_network
 
-  client:
+  # Base client configuration (template)
+  client-0:
     build: ./client
-    container_name: client
+    container_name: client-0
     restart: no
     depends_on:
       server:
@@ -29,10 +30,22 @@ services:
         condition: service_completed_successfully
     environment:
       - HTTPS_PROXY=http://polarproxy:1080
+      - CLIENT_ID=client_000
     networks:
       - app_network
     volumes:
       - polarproxy-certs:/certs:ro
+
+  client-1:
+    extends: client-0
+    container_name: client-1
+    environment:
+      - CLIENT_ID=client_001
+  client-2:
+    extends: client-0
+    container_name: client-2
+    environment:
+      - CLIENT_ID=client_002
 
   cert-installer:
     image: alpine:latest
@@ -115,30 +128,6 @@ services:
       - homepage.name=Wireshark
       - homepage.icon=wireshark.png
       - homepage.href=https://192.168.100.14:3001
-
-  cicflowmeter:
-    build: ./cicflowmeter
-    container_name: cicflowmeter
-    restart: no
-    volumes:
-      - ./sniffer/captures:/pcaps:ro
-      - ./cicflowmeter/output:/output
-    networks:
-      - app_network
-    # command: sh -c uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/flow.csv
-
-  flow-analyzer:
-    build: ./flow-analyzer
-    container_name: flow-analyzer
-    restart: no
-    # depends_on:
-    #   cicflowmeter:
-    #     condition: service_completed_successfully
-    volumes:
-      - ./cicflowmeter/output:/data
-    networks:
-      - app_network
-    # command: python /app/analyze_flows.py
 
   docs:
     build: ./docs

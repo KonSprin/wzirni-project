@@ -1,0 +1,32 @@
+# Analysis tools docker-compose file
+# Run analysis tools separately from main services
+
+services:
+  cicflowmeter:
+    build: ./cicflowmeter
+    container_name: cicflowmeter
+    restart: no
+    volumes:
+      - ./sniffer/captures:/pcaps:ro
+      - ./cicflowmeter/output:/output
+    # command: sh -c uv run cicflowmeter -f /pcaps/encrypted-traffic.pcap -c /output/flow.csv
+
+  # cicflowmeter-decrypted:
+  #   build: ./cicflowmeter
+  #   container_name: cicflowmeter-decrypted
+  #   restart: no
+  #   volumes:
+  #     - ./polar-proxy/logs:/pcaps:ro
+  #     - ./cicflowmeter/output:/output
+  #   command: sh -c "uv run cicflowmeter -f /pcaps/proxy-*.pcap -c /output/flow_decrypted.csv"
+
+  flow-analyzer:
+    build: ./flow-analyzer
+    container_name: flow-analyzer
+    restart: no
+    depends_on:
+      cicflowmeter:
+        condition: service_completed_successfully
+    volumes:
+      - ./cicflowmeter/output:/data
+    command: python /app/analyze_flows.py
