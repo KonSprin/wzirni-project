@@ -115,6 +115,30 @@ services:
       tcpdump -i any -w /captures/encrypted-traffic.pcap 'tcp port 8443'
       "
 
+  zeek:
+    image: zeek/zeek:latest
+    container_name: zeek
+    restart: no
+    volumes:
+      - ./polar-proxy/logs:/pcaps:ro
+      - ./sniffer/captures:/encrypted-pcaps:ro
+      - ./zeek/logs:/logs
+      - ./zeek/scripts:/scripts:ro
+    command: >
+      sh -c "
+      mkdir -p /logs &&
+      for pcap in /pcaps/*.pcap /encrypted-pcaps/*.pcap; do
+        if [ -f \"$$pcap\" ]; then
+          echo \"Processing $$pcap\" &&
+          zeek -r \"$$pcap\" /scripts/analysis.zeek LogAscii::output_to_stdout=F;
+        fi
+      done &&
+      mv *.log /logs/ 2>/dev/null || true &&
+      echo \"Zeek processing complete. Logs in /logs/\"
+      "
+    networks:
+      - app_network
+
   wireshark:
     image: lscr.io/linuxserver/wireshark:latest
     container_name: wireshark
