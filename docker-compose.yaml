@@ -47,6 +47,18 @@ services:
     environment:
       - CLIENT_ID=client_002
 
+  client-3:
+    extends: client-0
+    container_name: client-3
+    environment:
+      - CLIENT_ID=client_003
+
+  client-4:
+    extends: client-0
+    container_name: client-4
+    environment:
+      - CLIENT_ID=client_004
+
   cert-installer:
     image: alpine:latest
     container_name: cert-installer

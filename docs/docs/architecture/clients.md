@@ -161,7 +161,7 @@ docker compose up
 
 This starts:
 
-- `client-3` with ID `client_000`
+- `client-0` with ID `client_000`
 - `client-1` with ID `client_001`
 - `client-2` with ID `client_002`
 
@@ -170,7 +170,7 @@ This starts:
 ### View All Client Logs
 
 ```bash
-docker compose logs -f client-1 client-2 client-3
+docker compose logs -f client-0 client-1 client-2
 ```
 
 ### View Specific Client

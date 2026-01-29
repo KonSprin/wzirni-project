@@ -1,12 +1,12 @@
 Metric,Value
-Total Flows,106
-Unique Source IPs,2
-Unique Destination IPs,2
-Average Flow Duration (s),0.11059728301886794
-Average Throughput (bytes/s),140952.63744011827
-Average Packet Size (bytes),383.98990323044757
-Total Forward Packets,1233
-Total Backward Packets,788
+Total Flows,1510
+Unique Source IPs,3
+Unique Destination IPs,3
+Average Flow Duration (s),1.2839468582781457
+Average Throughput (bytes/s),139749.94409728935
+Average Packet Size (bytes),353.1945356664658
+Total Forward Packets,17340
+Total Backward Packets,11229
 Most Common Flow Type,Bulk Transfer
-Periodic Flows,55
-Non-Periodic Flows,51
+Periodic Flows,1043
+Non-Periodic Flows,467

@@ -326,7 +326,7 @@ def detect_periodic_traffic(df: pd.DataFrame, output_dir: Path) -> None:
         periodic_counts = df["is_periodic"].value_counts()
         axes[0].pie(
             periodic_counts.values,
-            labels=["Non-Periodic", "Periodic"],
+            labels=("Periodic", "Non-Periodic"),
             autopct="%1.1f%%",
             colors=sns.color_palette("pastel"),
         )
@@ -534,13 +534,13 @@ def main():
     df = classify_flows(df)
 
     # Generate visualizations
-    plot_flow_classification(df, output_dir)
-    analyze_timing_patterns(df, output_dir)
-    analyze_packet_sizes(df, output_dir)
+    # plot_flow_classification(df, output_dir)
+    # analyze_timing_patterns(df, output_dir)
+    # analyze_packet_sizes(df, output_dir)
     detect_periodic_traffic(df, output_dir)
-    correlation_analysis(df, output_dir)
-    create_traffic_timeline(df, output_dir)
-    create_summary_report(df, output_dir)
+    # correlation_analysis(df, output_dir)
+    # create_traffic_timeline(df, output_dir)
+    # create_summary_report(df, output_dir)
 
     # Export classified flows
     output_path = output_dir / "flows_classified.csv"

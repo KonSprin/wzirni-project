@@ -1,8 +1,8 @@
 Feature 1,Feature 2,Correlation
-flow_duration,flow_iat_mean,0.9997095872958423
-pkt_size_avg,flow_byts_s,0.8861985643118014
-pkt_size_avg,tot_bwd_pkts,0.9533892467417874
-pkt_size_avg,bwd_pkt_len_mean,0.9966660002254434
-flow_byts_s,tot_bwd_pkts,0.873495873040586
-flow_byts_s,bwd_pkt_len_mean,0.8708985538814082
-tot_bwd_pkts,bwd_pkt_len_mean,0.9462797609810301
+flow_duration,flow_iat_mean,0.9749631739405271
+pkt_size_avg,flow_byts_s,0.8233802092386232
+pkt_size_avg,tot_bwd_pkts,0.7324853272380304
+pkt_size_avg,bwd_pkt_len_mean,0.9931463215194277
+flow_byts_s,bwd_pkt_len_mean,0.8045349881952905
+tot_fwd_pkts,tot_bwd_pkts,0.7112006977053885
+tot_bwd_pkts,bwd_pkt_len_mean,0.7100072377595044

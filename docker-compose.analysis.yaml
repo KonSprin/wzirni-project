@@ -24,9 +24,9 @@ services:
     build: ./flow-analyzer
     container_name: flow-analyzer
     restart: no
-    depends_on:
-      cicflowmeter:
-        condition: service_completed_successfully
+    # depends_on:
+    #   cicflowmeter:
+    #     condition: service_completed_successfully
     volumes:
       - ./cicflowmeter/output:/data
     command: python /app/analyze_flows.py
